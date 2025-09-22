@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FOOD WALK</title>
+<h2>Valley Of Peace</h2>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #fff7f0, #ffe5d4); color: #333; overflow-x: hidden; }
+header { font-family: 'Baloo 2', cursive; background: linear-gradient(90deg, #ff4d4d, #ff944d); color: white; text-align: center; padding: 1.5rem; font-size: 2.5rem; font-weight: 600; letter-spacing: 2px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); position: sticky; top: 0; z-index: 1000; }
+.container { max-width: 1000px; margin: 20px auto; padding: 0 15px; animation: fadeIn 1s ease-in-out; }
+#search-bar { width: 100%; padding: 14px; font-size: 1.1rem; border-radius: 12px; border: 1px solid #ccc; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: all 0.3s; }
+#search-bar:focus { outline: none; border-color: #ff944d; box-shadow: 0 4px 12px rgba(255,148,77,0.5); }
+.restaurant { background: white; border-radius: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin-bottom: 30px; overflow: hidden; transform: scale(1); transition: transform 0.3s, box-shadow 0.3s; cursor: pointer; }
+.restaurant:hover { transform: scale(1.05) rotate(-0.5deg); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+.restaurant-header { display: flex; align-items: center; padding: 18px; }
+.restaurant-header img { width: 70px; height: 70px; object-fit: cover; border-radius: 12px; margin-right: 18px; transition: transform 0.3s; }
+.restaurant-header img:hover { transform: scale(1.15); }
+.restaurant-header h2 { margin: 0; font-size: 1.5rem; color: #ff4d4d; font-weight: 600; }
+.profile { display: none; background: white; border-radius: 18px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); animation: slideUp 0.5s ease; }
+.profile img { width: 100%; height: 220px; object-fit: cover; border-radius: 12px; margin-bottom: 18px; }
+.profile .description { margin-bottom: 18px; font-size: 1.05rem; color: #555; }
+.status-open { color: green; font-weight: bold; }
+.status-closed { color: red; font-weight: bold; }
+.menu-item { display: flex; justify-content: space-between; align-items: center; margin: 14px 0; font-size: 1.15rem; animation: fadeIn 0.5s ease; }
+button { background: linear-gradient(90deg, #ff4d4d, #ff944d); color: white; border: none; padding: 9px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+button:hover { transform: scale(1.1); background: linear-gradient(90deg, #ff3333, #ff7a1f); }
+#cart-panel { position: fixed; top: 0; right: -360px; width: 340px; height: 100%; background: #fff; box-shadow: -4px 0 20px rgba(0,0,0,0.2); border-radius: 18px 0 0 18px; padding: 22px; transition: right 0.5s ease; z-index: 2000; display: flex; flex-direction: column; }
+#cart-panel.open { right: 0; }
+#cart-panel h2 { margin-top: 0; color: #ff944d; }
+#cart-items p { margin: 8px 0; display: flex; justify-content: space-between; align-items: center; }
+#cart-items button { background: #ff4d4d; font-size: 0.9rem; padding: 3px 8px; border-radius: 50%; }
+#notify { margin-top: 15px; font-weight: bold; color: green; animation: blink 1s infinite alternate; }
+#close-cart { background: #ccc; border-radius: 50%; padding: 5px 10px; margin-left: auto; margin-bottom: 10px; }
+#open-cart-btn { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: linear-gradient(90deg, #ff4d4d, #ff944d); border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,0.2); z-index: 2100; transition: transform 0.3s; font-size: 1.8rem; color: white; }
+#open-cart-btn:hover { transform: scale(1.2); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes blink { from { opacity: 0.6; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<header>FOOD WALK</header>
+<div class="container">
+<input type="text" id="search-bar" placeholder="Search for restaurants or food..." onkeyup="searchRestaurants()">
+<div id="restaurant-list"></div>
+<div id="restaurant-profile" class="profile"></div>
+</div>
+
+<div id="cart-panel">
+<button id="close-cart" onclick="toggleCart(false)">×</button>
+<h2>Your Cart 🛒</h2>
+<div id="cart-items"></div>
+<p><strong>Total: $<span id="total">0</span></strong></p>
+<button onclick="placeOrder()">Place Order via WhatsApp</button>
+<p id="notify"></p>
+</div>
+
+<button id="open-cart-btn" onclick="toggleCart(true)">🛒</button>
+
+<script>
+let cart = [];
+const restaurants = [
+  { 
+    name: "Village Grounds", 
+    img: "images/village-grounds.jpg", 
+    description: "Cozy cafe serving coffee, bagels, and pastries. 123 Main St.", 
+    hours: { open: 7, close: 18 }, 
+    whatsapp: "+5016210064", 
+    menu: [ { item: "Cappuccino", price: 4 }, { item: "Latte", price: 5 }, { item: "Bagel", price: 3 } ] 
+  },
+  { 
+    name: "Valley Lounge", 
+    img: "images/burger-town.jpg", 
+    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
+    hours: { open: 11, close: 22 }, 
+    whatsapp: "+5016685897",
+    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
+  },
+  { 
+    name: "Gema Fastfood", 
+    img: "images/burger-town.jpg", 
+    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
+    hours: { open: 11, close: 22 }, 
+    whatsapp: "+19876543210",
+    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
+  },
+  { 
+    name: "Pupuseria Salina", 
+    img: "images/burger-town.jpg", 
+    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
+    hours: { open: 11, close: 22 }, 
+    whatsapp: "+19876543210",
+    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
+  },
+  { 
+    name: "Melys Delis", 
+    img: "images/burger-town.jpg", 
+    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
+    hours: { open: 11, close: 22 }, 
+    whatsapp: "+19876543210",
+    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
+  },
+  { 
+    name: "D-Valley", 
+    img: "images/burger-town.jpg", 
+    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
+    hours: { open: 11, close: 22 }, 
+    whatsapp: "+19876543210",
+    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
+  },
+  { 
+    name: "Dueñas Paradise", 
+    img: "images/burger-town.jpg", 
+    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
+    hours: { open: 11, close: 22 }, 
+    whatsapp: "+19876543210",
+    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
+  },
+  { 
+    name: "Garden Cafe", 
+    img: "images/burger-town.jpg", 
+    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
+    hours: { open: 11, close: 22 }, 
+    whatsapp: "+19876543210",
+    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
+  },
+  { 
+    name: "Comedor la Familia", 
+    img: "images/burger-town.jpg", 
+    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
+    hours: { open: 11, close: 22 }, 
+    whatsapp: "+19876543210",
+    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
+  },
+  { 
+    name: "Empanadas", 
+    img: "images/burger-town.jpg", 
+    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
+    hours: { open: 11, close: 22 }, 
+    whatsapp: "+19876543210",
+    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
+  }
+];
+
+function toggleCart(open) { 
+  const cartPanel = document.getElementById('cart-panel'); 
+  if(open) cartPanel.classList.add('open'); 
+  else cartPanel.classList.remove('open'); 
+}
+
+function addToCart(item, price) { 
+  cart.push({ item, price }); 
+  renderCart(); 
+}
+
+function removeFromCart(idx) { 
+  cart.splice(idx,1); 
+  renderCart(); 
+}
+
+function renderCart() { 
+  const cartItems = document.getElementById('cart-items'); 
+  const totalEl = document.getElementById('total'); 
+  cartItems.innerHTML=''; 
+  let total=0; 
+  cart.forEach((c,idx)=>{ 
+    total+=c.price; 
+    const p=document.createElement('p'); 
+    p.innerHTML=`${c.item} - $${c.price} <button onclick='removeFromCart(${idx})'>×</button>`; 
+    cartItems.appendChild(p); 
+  }); 
+  totalEl.innerText=total; 
+}
+
+function placeOrder() { 
+  if(cart.length === 0){ 
+    alert('Cart is empty!'); 
+    return; 
+  } 
+
+  const profile = document.getElementById('restaurant-profile');
+  if(profile.style.display === 'block'){
+    const restaurantName = profile.querySelector('h2').innerText;
+    const restaurant = restaurants.find(r => r.name === restaurantName);
+    
+    if(restaurant && restaurant.whatsapp){
+      let message = `Hello ${restaurant.name}, I would like to place an order:%0A`;
+      cart.forEach(c => { message += `- ${c.item}: $${c.price}%0A`; });
+      const whatsappURL = `https://wa.me/${restaurant.whatsapp.replace(/\D/g,'')}?text=${message}`;
+      window.open(whatsappURL, '_blank');
+      
+      cart = [];
+      renderCart();
+      document.getElementById('notify').innerText = 'WhatsApp order sent! ✅';
+    } else {
+      alert('WhatsApp number not available for this restaurant.');
+    }
+  } else {
+    alert('Please open a restaurant profile to place an order.');
+  }
+}
+
+function renderRestaurants(){ 
+  const container=document.getElementById('restaurant-list'); 
+  container.innerHTML=''; 
+  restaurants.forEach((rest,idx)=>{ 
+    const restDiv=document.createElement('div'); 
+    restDiv.className='restaurant'; 
+    restDiv.innerHTML=`<div class="restaurant-header" onclick="openProfile(${idx})"><img src='${rest.img}' alt='${rest.name}' onerror="this.onerror=null;this.src='images/default.jpg';"><h2>${rest.name}</h2></div>`; 
+    container.appendChild(restDiv); 
+  }); 
+}
+
+function openProfile(idx){ 
+  const list=document.getElementById('restaurant-list'); 
+  const profile=document.getElementById('restaurant-profile'); 
+  const rest=restaurants[idx]; 
+  const statusText=getStatus(rest); 
+  list.style.display='none'; 
+  profile.style.display='block'; 
+  profile.innerHTML=`<button onclick='closeProfile()'>← Back</button><h2>${rest.name}</h2><img src='${rest.img}' alt='${rest.name}' onerror="this.onerror=null;this.src='images/default.jpg';"><p class='description'>${rest.description}</p><p>Hours: ${rest.hours.open}:00 - ${rest.hours.close}:00 | Status: ${statusText}</p><div class='menu'>${rest.menu.map(m=>`<div class='menu-item'><span>${m.item} - $${m.price}</span><button onclick='addToCart("${m.item}", ${m.price})'>Add</button></div>`).join('')}</div>`; 
+}
+
+function closeProfile(){ 
+  document.getElementById('restaurant-profile').style.display='none'; 
+  document.getElementById('restaurant-list').style.display='block'; 
+}
+
+function getStatus(rest){ 
+  const hour=new Date().getHours(); 
+  return (hour>=rest.hours.open && hour<rest.hours.close)?`<span class='status-open'>OPEN ✅</span>`:`<span class='status-closed'>CLOSED ❌</span>`; 
+}
+
+function autoUpdateStatus(){ 
+  const profile=document.getElementById('restaurant-profile'); 
+  if(profile.style.display==='block'){ 
+    const title=profile.querySelector('h2').innerText; 
+    const rest=restaurants.find(r=>r.name===title); 
+    if(rest){ 
+      const statusText=getStatus(rest); 
+      profile.querySelector('p:nth-of-type(2)').innerHTML=`Hours: ${rest.hours.open}:00 - ${rest.hours.close}:00 | Status: ${statusText}`; 
+    } 
+  } 
+}
+setInterval(autoUpdateStatus,60000);
+
+function searchRestaurants(){ 
+  const query=document.getElementById('search-bar').value.toLowerCase(); 
+  const container=document.getElementById('restaurant-list'); 
+  container.innerHTML=''; 
+  restaurants.forEach((rest,idx)=>{ 
+    if(rest.name.toLowerCase().includes(query)||rest.menu.some(m=>m.item.toLowerCase().includes(query))){ 
+      const restDiv=document.createElement('div'); 
+      restDiv.className='restaurant'; 
+      restDiv.innerHTML=`<div class="restaurant-header" onclick="openProfile(${idx})"><img src='${rest.img}' alt='${rest.name}' onerror="this.onerror=null;this.src='images/default.jpg';"><h2>${rest.name}</h2></div>`; 
+      container.appendChild(restDiv); 
+    } 
+  }); 
+}
+
+renderRestaurants();
+</script>
+</body>
+</html>
