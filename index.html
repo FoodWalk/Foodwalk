@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FOOD WALK</title>
-<h2>Valley Of Peace</h2>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 <style>
 body { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #fff7f0, #ffe5d4); color: #333; overflow-x: hidden; }
@@ -60,7 +59,9 @@ button:hover { transform: scale(1.1); background: linear-gradient(90deg, #ff3333
 <button id="open-cart-btn" onclick="toggleCart(true)">🛒</button>
 
 <script>
-let cart = [];
+let cart = {}; // cart per restaurant
+let currentRestaurantIdx = null;
+
 const restaurants = [
   { 
     name: "Village Grounds", 
@@ -71,75 +72,11 @@ const restaurants = [
     menu: [ { item: "Cappuccino", price: 4 }, { item: "Latte", price: 5 }, { item: "Bagel", price: 3 } ] 
   },
   { 
-    name: "Valley Lounge", 
+    name: "Burger Town", 
     img: "images/burger-town.jpg", 
     description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
     hours: { open: 11, close: 22 }, 
     whatsapp: "+5016685897",
-    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
-  },
-  { 
-    name: "Gema Fastfood", 
-    img: "images/burger-town.jpg", 
-    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
-    hours: { open: 11, close: 22 }, 
-    whatsapp: "+19876543210",
-    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
-  },
-  { 
-    name: "Pupuseria Salina", 
-    img: "images/burger-town.jpg", 
-    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
-    hours: { open: 11, close: 22 }, 
-    whatsapp: "+19876543210",
-    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
-  },
-  { 
-    name: "Melys Delis", 
-    img: "images/burger-town.jpg", 
-    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
-    hours: { open: 11, close: 22 }, 
-    whatsapp: "+19876543210",
-    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
-  },
-  { 
-    name: "D-Valley", 
-    img: "images/burger-town.jpg", 
-    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
-    hours: { open: 11, close: 22 }, 
-    whatsapp: "+19876543210",
-    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
-  },
-  { 
-    name: "Dueñas Paradise", 
-    img: "images/burger-town.jpg", 
-    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
-    hours: { open: 11, close: 22 }, 
-    whatsapp: "+19876543210",
-    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
-  },
-  { 
-    name: "Garden Cafe", 
-    img: "images/burger-town.jpg", 
-    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
-    hours: { open: 11, close: 22 }, 
-    whatsapp: "+19876543210",
-    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
-  },
-  { 
-    name: "Comedor la Familia", 
-    img: "images/burger-town.jpg", 
-    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
-    hours: { open: 11, close: 22 }, 
-    whatsapp: "+19876543210",
-    menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
-  },
-  { 
-    name: "Empanadas", 
-    img: "images/burger-town.jpg", 
-    description: "Local burger joint famous for juicy burgers. 45 Elm St.", 
-    hours: { open: 11, close: 22 }, 
-    whatsapp: "+19876543210",
     menu: [ { item: "Cheeseburger", price: 8 }, { item: "Fries", price: 3 } ] 
   }
 ];
@@ -151,55 +88,51 @@ function toggleCart(open) {
 }
 
 function addToCart(item, price) { 
-  cart.push({ item, price }); 
-  renderCart(); 
+  if(currentRestaurantIdx === null) return;
+  if(!cart[currentRestaurantIdx]) cart[currentRestaurantIdx] = [];
+  cart[currentRestaurantIdx].push({ item, price });
+  renderCart();
 }
 
 function removeFromCart(idx) { 
-  cart.splice(idx,1); 
-  renderCart(); 
+  if(currentRestaurantIdx === null || !cart[currentRestaurantIdx]) return;
+  cart[currentRestaurantIdx].splice(idx,1); 
+  renderCart();
 }
 
-function renderCart() { 
+function renderCart() {
   const cartItems = document.getElementById('cart-items'); 
   const totalEl = document.getElementById('total'); 
-  cartItems.innerHTML=''; 
-  let total=0; 
-  cart.forEach((c,idx)=>{ 
-    total+=c.price; 
-    const p=document.createElement('p'); 
-    p.innerHTML=`${c.item} - $${c.price} <button onclick='removeFromCart(${idx})'>×</button>`; 
-    cartItems.appendChild(p); 
-  }); 
-  totalEl.innerText=total; 
+  cartItems.innerHTML = '';
+  if(currentRestaurantIdx === null || !cart[currentRestaurantIdx]) {
+    totalEl.innerText = 0;
+    return;
+  }
+  let total = 0;
+  cart[currentRestaurantIdx].forEach((c, idx) => {
+    total += c.price;
+    const p = document.createElement('p');
+    p.innerHTML = `${c.item} - $${c.price} <button onclick='removeFromCart(${idx})'>×</button>`;
+    cartItems.appendChild(p);
+  });
+  totalEl.innerText = total;
 }
 
 function placeOrder() { 
-  if(cart.length === 0){ 
+  if(currentRestaurantIdx === null || !cart[currentRestaurantIdx] || cart[currentRestaurantIdx].length === 0){ 
     alert('Cart is empty!'); 
     return; 
   } 
 
-  const profile = document.getElementById('restaurant-profile');
-  if(profile.style.display === 'block'){
-    const restaurantName = profile.querySelector('h2').innerText;
-    const restaurant = restaurants.find(r => r.name === restaurantName);
-    
-    if(restaurant && restaurant.whatsapp){
-      let message = `Hello ${restaurant.name}, I would like to place an order:%0A`;
-      cart.forEach(c => { message += `- ${c.item}: $${c.price}%0A`; });
-      const whatsappURL = `https://wa.me/${restaurant.whatsapp.replace(/\D/g,'')}?text=${message}`;
-      window.open(whatsappURL, '_blank');
-      
-      cart = [];
-      renderCart();
-      document.getElementById('notify').innerText = 'WhatsApp order sent! ✅';
-    } else {
-      alert('WhatsApp number not available for this restaurant.');
-    }
-  } else {
-    alert('Please open a restaurant profile to place an order.');
-  }
+  const restaurant = restaurants[currentRestaurantIdx];
+  let message = `Hello ${restaurant.name}, I would like to place an order:%0A`;
+  cart[currentRestaurantIdx].forEach(c => { message += `- ${c.item}: $${c.price}%0A`; });
+  const whatsappURL = `https://wa.me/${restaurant.whatsapp.replace(/\D/g,'')}?text=${message}`;
+  window.open(whatsappURL, '_blank');
+
+  cart[currentRestaurantIdx] = [];
+  renderCart();
+  document.getElementById('notify').innerText = 'WhatsApp order sent! ✅';
 }
 
 function renderRestaurants(){ 
@@ -214,6 +147,7 @@ function renderRestaurants(){
 }
 
 function openProfile(idx){ 
+  currentRestaurantIdx = idx;
   const list=document.getElementById('restaurant-list'); 
   const profile=document.getElementById('restaurant-profile'); 
   const rest=restaurants[idx]; 
@@ -221,11 +155,14 @@ function openProfile(idx){
   list.style.display='none'; 
   profile.style.display='block'; 
   profile.innerHTML=`<button onclick='closeProfile()'>← Back</button><h2>${rest.name}</h2><img src='${rest.img}' alt='${rest.name}' onerror="this.onerror=null;this.src='images/default.jpg';"><p class='description'>${rest.description}</p><p>Hours: ${rest.hours.open}:00 - ${rest.hours.close}:00 | Status: ${statusText}</p><div class='menu'>${rest.menu.map(m=>`<div class='menu-item'><span>${m.item} - $${m.price}</span><button onclick='addToCart("${m.item}", ${m.price})'>Add</button></div>`).join('')}</div>`; 
+  renderCart();
 }
 
 function closeProfile(){ 
   document.getElementById('restaurant-profile').style.display='none'; 
   document.getElementById('restaurant-list').style.display='block'; 
+  currentRestaurantIdx = null;
+  renderCart();
 }
 
 function getStatus(rest){ 
